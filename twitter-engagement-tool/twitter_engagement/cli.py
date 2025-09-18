@@ -13,6 +13,7 @@ from .database import AccountDatabase
 from .parser import AccountParser
 from .converter import RettwiConverter
 from .utils import format_datetime, truncate_string, validate_twitter_cookies
+from .login import auto_login_and_convert
 
 
 console = Console()
@@ -289,6 +290,80 @@ def update_status(ctx, username: str, activate: bool, error: Optional[str]):
         console.print(f"[green]✓[/green] Account '{username}' {status}")
     
     asyncio.run(_update())
+
+
+@cli.command()
+@click.option('--username', help='Login specific username only')
+@click.option('--limit', default=5, help='Number of accounts to process')
+@click.pass_context
+def auto_login(ctx, username: Optional[str], limit: int):
+    """Automatically login accounts and get cookies"""
+    async def _auto_login():
+        db = ctx.obj['db']
+        
+        if username:
+            # Login specific account
+            account = await db.get_account(username)
+            if not account:
+                console.print(f"[red]Account '{username}' not found[/red]")
+                return
+            accounts = [account]
+        else:
+            # Get accounts without cookies
+            all_accounts = await db.get_all_accounts()
+            accounts = [acc for acc in all_accounts if not acc.cookies or not validate_twitter_cookies(acc.cookies)][:limit]
+        
+        if not accounts:
+            console.print("[yellow]No accounts need login[/yellow]")
+            return
+        
+        console.print(f"[cyan]Processing {len(accounts)} accounts...[/cyan]")
+        
+        success_count = 0
+        failed_count = 0
+        
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console
+        ) as progress:
+            
+            for account in accounts:
+                task = progress.add_task(f"Logging in {account.username}...", total=None)
+                
+                try:
+                    # Attempt auto-login
+                    result = await auto_login_and_convert(account)
+                    
+                    if result:
+                        # Update account with cookies
+                        account.cookies = result['cookies']
+                        account.rettiwt_api_key = result['apiKey']
+                        await db.add_account(account)
+                        
+                        success_count += 1
+                        console.print(f"[green]✓[/green] {account.username}: Login successful")
+                        console.print(f"   API Key: {result['apiKey'][:40]}...")
+                    else:
+                        failed_count += 1
+                        console.print(f"[red]✗[/red] {account.username}: Login failed")
+                
+                except Exception as e:
+                    failed_count += 1
+                    console.print(f"[red]✗[/red] {account.username}: {str(e)}")
+                    await db.update_account_status(account.username, False, str(e))
+                
+                progress.update(task, completed=True)
+        
+        # Summary
+        console.print(f"\n[bold]Summary:[/bold]")
+        console.print(f"  [green]Success:[/green] {success_count}")
+        console.print(f"  [red]Failed:[/red] {failed_count}")
+        
+        if success_count > 0:
+            console.print(f"\n[green]✓[/green] Run 'twitter-engagement export-rettiwt' to export credentials")
+    
+    asyncio.run(_auto_login())
 
 
 if __name__ == '__main__':
