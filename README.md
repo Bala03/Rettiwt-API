@@ -1,21 +1,160 @@
 # Rettiwt-API
 
-A CLI tool and an API for fetching data from Twitter for free!
+A comprehensive TypeScript/JavaScript API and CLI tool for interacting with Twitter/X, featuring a Python integration tool for managing multiple accounts and automation.
+
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Authentication](#authentication)
+- [Usage](#usage)
+  - [Basic Examples](#usage)
+  - [Multi-Account Management](#4-using-twitter-engagement-tool-for-multi-account-management)
+  - [Integration with twscrape](#5-integration-with-twscrape)
+- [Configuration](#rettiwt-configuration)
+- [Features](#features)
+- [CLI Usage](#cli-usage)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [Security Considerations](#security-considerations)
+- [Support](#support)
+
+## Project Overview
+
+Rettiwt-API consists of two main components:
+
+1. **Core API (TypeScript/JavaScript)**: A robust API for interacting with Twitter/X without rate limits
+2. **Twitter Engagement Tool (Python)**: A powerful account management and automation tool that integrates with Rettiwt-API
+
+### Key Features
+
+#### Core API Features
+- 🚀 No rate limits on data fetching
+- 🔐 Guest and authenticated user access
+- 📊 Comprehensive Twitter/X API coverage
+- 🛠️ TypeScript support with full type definitions
+- 💻 CLI interface for non-programmers
+- 🔄 Hot-swappable authentication
+- 🌐 Proxy support
+- 📝 Debug logging capabilities
+
+#### Twitter Engagement Tool Features
+- 👥 Bulk account management
+- 🔑 Automatic API key generation
+- 🗄️ SQLite database for credential storage
+- 🤖 Android API login support
+- 🔄 Seamless twscrape integration
+- 📦 Cookie format conversion
+- 🛡️ Rate limit management with account switching
+
+## Quick Start
+
+### Basic Usage (Guest Mode)
+```javascript
+// No authentication required for basic operations
+import { Rettiwt } from 'rettiwt-api';
+
+const rettiwt = new Rettiwt();
+
+// Get user details
+const user = await rettiwt.user.details('elonmusk');
+console.log(user.fullName); // "Elon Musk"
+
+// Get user timeline
+const tweets = await rettiwt.user.timeline('elonmusk');
+tweets.list.forEach(tweet => {
+  console.log(tweet.text);
+});
+```
+
+### Authenticated Usage
+```javascript
+// With authentication for full access
+const rettiwt = new Rettiwt({ apiKey: 'YOUR_API_KEY' });
+
+// Search tweets
+const results = await rettiwt.tweet.search({
+  includeWords: ['nodejs', 'typescript'],
+  fromUsers: ['username'],
+  startDate: new Date('2024-01-01')
+});
+
+// Like a tweet
+await rettiwt.tweet.like('tweet_id_here');
+
+// Post a new tweet
+await rettiwt.tweet.post({
+  text: 'Hello Twitter! Posted via Rettiwt-API'
+});
+```
+
+### Multi-Account Management (Python)
+```bash
+# Quick setup for multiple accounts
+cd twitter-engagement-tool
+pip install -r requirements.txt
+python -m twitter_engagement init-db
+python -m twitter_engagement add-accounts accounts.txt
+python -m twitter_engagement convert-rettiwt
+python -m twitter_engagement export-rettiwt
+```
 
 ## Prerequisites
 
-- NodeJS 20
-- A working Twitter account (optional)
+### For Core API
+- Node.js 20 or higher
+- npm or yarn package manager
+- A Twitter/X account (optional for guest access)
+
+### For Twitter Engagement Tool
+- Python 3.8 or higher
+- pip package manager
+- SQLite3 (usually included with Python)
 
 ## Installation
 
-It is recommended to install the package globally, if you want to use it from the CLI. Use the following steps to install the package and ensure it's installed correctly:
+### Installing Core API
 
-1. Open a terminal.
-2. Install the package using the command `npm install -g rettiwt-api`.
-3. Check if the package is installed correctly using the command `rettiwt help`.
+#### Global Installation (Recommended for CLI usage)
+```bash
+# Install globally using npm
+npm install -g rettiwt-api
 
-For using the package in your own project, you can install it as a [dependency](https://rishikant181.github.io/Rettiwt-API/#md:usage-as-a-dependency).
+# Verify installation
+rettiwt help
+```
+
+#### Project Dependency
+```bash
+# Using npm
+npm install --save rettiwt-api
+
+# Using yarn
+yarn add rettiwt-api
+```
+
+### Installing Twitter Engagement Tool
+
+```bash
+# Clone the repository
+git clone <repository-url>
+
+# Navigate to the tool directory
+cd twitter-engagement-tool
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Or install as a package
+pip install -e .
+
+# Initialize the database
+python -m twitter_engagement init-db
+```
 
 ## Authentication
 
@@ -99,6 +238,44 @@ By default, Rettiwt-API uses 'guest' authentication. If however, access to the f
 
 - `API_KEY` created in this way should last 5 years from the date of login, as long as the credentials to the account aren't changed.
 - This approach can also be done without going into incognito/in-private mode, in which case you can either login as usual or skip the login step if you're already logged in, and continue from the steps after login. However, this makes the `API_KEY` to last only as long as the Twitter/X account isn't logged out of (you may exit the browser as usual) or 5 years, whichever comes first. That's why it's recommended to use incognito/in-private mode, so that the `API_KEY` isn't accidentially revoked by logging out.
+
+### C. Using Twitter Engagement Tool (Automated)
+
+The Twitter Engagement Tool provides automated methods to obtain API keys:
+
+#### Method 1: Import existing cookies
+Create an `accounts.txt` file with your account details:
+```
+username1:password1:email1@example.com:emailpass1:auth_token=xxx; ct0=yyy
+username2:password2:email2@example.com:emailpass2:{"auth_token": "aaa", "ct0": "bbb"}
+```
+
+Then import and convert:
+```bash
+# Add accounts to database
+python -m twitter_engagement add-accounts accounts.txt
+
+# Generate Rettiwt API keys
+python -m twitter_engagement convert-rettiwt
+
+# Export credentials
+python -m twitter_engagement export-rettiwt
+```
+
+#### Method 2: Android API Login (Most Reliable)
+```bash
+# Login specific account
+python -m twitter_engagement android-login --username user1
+
+# Login all accounts without cookies
+python -m twitter_engagement android-login --all
+```
+
+#### Method 3: Web API Login
+```bash
+# Auto-login accounts (may require email verification)
+python -m twitter_engagement auto-login --limit 5
+```
 
 ## The API_KEY
 
@@ -264,32 +441,72 @@ rettiwt.tweet.search({
 });
 ```
 
-### 4. Getting an API_KEY during runtime, using 'user' authentication (Borked)
+### 4. Using Twitter Engagement Tool for Multi-Account Management
 
-Sometimes, you might want to generate an API_KEY on the fly, in situations such as implementing Twitter login in your application. The following example demonstrates how to generate an API_KEY during runtime:
+The Twitter Engagement Tool enables powerful multi-account management capabilities:
 
-```ts
-import { Rettiwt } from 'rettiwt-api';
+```python
+import asyncio
+from twitter_engagement.database import AccountDatabase
+from twscrape import API as TwscrapeAPI
 
-// Creating a new Rettiwt instance
-const rettiwt = new Rettiwt();
+async def multi_account_example():
+    # Initialize database
+    db = AccountDatabase()
+    
+    # Get all active accounts with Rettiwt API keys
+    accounts = await db.get_active_accounts()
+    rettiwt_accounts = [acc for acc in accounts if acc.rettiwt_api_key]
+    
+    print(f"Found {len(rettiwt_accounts)} active accounts")
+    
+    # Use accounts for various activities
+    for account in rettiwt_accounts:
+        print(f"Account: {account.username}")
+        print(f"API Key: {account.rettiwt_api_key[:40]}...")
+        
+        # Use with Rettiwt API in Node.js/TypeScript
+        # Pass account.rettiwt_api_key to your Node.js application
 
-// Logging in an getting the API_KEY
-rettiwt.auth.login('<email>', '<username>', '<password>')
-.then(apiKey => {
-    // Use the API_KEY
-	...
-})
-.catch(err => {
-	console.log(err);
-});
+# Run the example
+asyncio.run(multi_account_example())
 ```
 
-Where,
+### 5. Integration with twscrape
 
-- `<email>` is the email associated with the Twitter account to be logged into.
-- `<username>` is the username associated with the Twitter account.
-- `<password>` is the password to the Twitter account.
+The tool seamlessly integrates with twscrape for advanced scraping:
+
+```python
+import asyncio
+from twscrape import API
+from twitter_engagement.database import AccountDatabase
+
+async def use_with_twscrape():
+    # Get accounts from database
+    db = AccountDatabase()
+    accounts = await db.get_active_accounts()
+    
+    # Initialize twscrape
+    api = API()
+    
+    # Add accounts to twscrape
+    for account in accounts:
+        if account.cookies:
+            cookie_str = "; ".join([f"{k}={v}" for k, v in account.cookies.items()])
+            await api.pool.add_account(
+                username=account.username,
+                password=account.password,
+                email=account.email,
+                email_password=account.email_password,
+                cookies=cookie_str
+            )
+    
+    # Use twscrape for searching
+    async for tweet in api.search("Python programming", limit=10):
+        print(f"@{tweet.user.username}: {tweet.rawContent[:100]}...")
+
+asyncio.run(use_with_twscrape())
+```
 
 ## Using a proxy
 
@@ -501,11 +718,13 @@ So far, the following operations are supported:
 
 ## CLI Usage
 
+### Rettiwt-API CLI
+
 Rettiwt-API provides an easy to use command-line interface which does not require any programming knowledge.
 
 By default, the CLI operates in 'guest' authentication. If you want to use 'user' authentication:
 
-1. Generate an API_KEY as described in [Authentication](https://rishikant181.github.io/Rettiwt-API/#md:authentication).
+1. Generate an API_KEY as described in [Authentication](#authentication).
 2. Store the output API_KEY as an environment variable with the name 'API_KEY'.
     - Additionally, store the API_KEY in a file for later use.
     - Make sure to generate an API_KEY only once, and use it every time you need it.
@@ -517,13 +736,288 @@ Help for the CLI can be obtained from the CLI itself:
 - For help regarding the available commands, use the command `rettiwt help`
 - For help regarding a specific command, use the command `rettiwt help <command_name>`
 
+### Twitter Engagement Tool CLI
+
+The Twitter Engagement Tool provides a comprehensive CLI for account management:
+
+#### Basic Commands
+
+```bash
+# Initialize the database
+python -m twitter_engagement init-db
+
+# Add accounts from file
+python -m twitter_engagement add-accounts accounts.txt
+
+# List all accounts
+python -m twitter_engagement list-accounts
+
+# Show only active accounts
+python -m twitter_engagement list-accounts --active-only
+
+# Show accounts with Rettiwt keys
+python -m twitter_engagement list-accounts --with-rettiwt
+```
+
+#### Account Management
+
+```bash
+# Generate Rettiwt API keys for all accounts
+python -m twitter_engagement convert-rettiwt
+
+# Export credentials to JSON
+python -m twitter_engagement export-rettiwt
+
+# Update account status
+python -m twitter_engagement update-status USERNAME --deactivate --error "Rate limited"
+python -m twitter_engagement update-status USERNAME --activate
+
+# Delete an account
+python -m twitter_engagement delete-account USERNAME
+```
+
+#### Automated Login
+
+```bash
+# Android API login (recommended)
+python -m twitter_engagement android-login --username USER1
+python -m twitter_engagement android-login --all
+
+# Web API login
+python -m twitter_engagement auto-login --limit 5
+python -m twitter_engagement auto-login --username USER1
+```
+
+#### Account File Formats
+
+The tool supports multiple formats for the `accounts.txt` file:
+
+1. **With cookies (recommended)**:
+   ```
+   username:password:email:email_password:auth_token=xxx; ct0=yyy
+   ```
+
+2. **Without cookies** (will require login):
+   ```
+   username:password:email:email_password
+   ```
+
+3. **Cookie formats supported**:
+   - Raw cookie string: `"auth_token=xxx; ct0=yyy"`
+   - JSON format: `{"auth_token": "xxx", "ct0": "yyy"}`
+   - Base64 encoded cookies
+
+## Best Practices
+
+### Rate Limiting and Account Rotation
+
+When using multiple accounts, implement proper rate limiting:
+
+```javascript
+// Example: Rotating accounts with Rettiwt API
+const accounts = [
+  { apiKey: 'KEY1', lastUsed: null },
+  { apiKey: 'KEY2', lastUsed: null },
+  { apiKey: 'KEY3', lastUsed: null }
+];
+
+function getNextAccount() {
+  // Sort by last used time and return the least recently used
+  return accounts.sort((a, b) => 
+    (a.lastUsed || 0) - (b.lastUsed || 0)
+  )[0];
+}
+
+async function makeRequest() {
+  const account = getNextAccount();
+  const rettiwt = new Rettiwt({ apiKey: account.apiKey });
+  
+  try {
+    const result = await rettiwt.tweet.search({ includeWords: ['nodejs'] });
+    account.lastUsed = Date.now();
+    return result;
+  } catch (error) {
+    if (error.message.includes('rate limit')) {
+      // Mark account as rate limited
+      account.lastUsed = Date.now() + (15 * 60 * 1000); // 15 minutes
+      // Try with next account
+      return makeRequest();
+    }
+    throw error;
+  }
+}
+```
+
+### Cookie Management Best Practices
+
+1. **Store cookies securely**: Never commit cookies or API keys to version control
+2. **Refresh cookies periodically**: Cookies may expire, plan for refreshing
+3. **Monitor account health**: Track which accounts are working and which need attention
+4. **Use proxy rotation**: Distribute requests across different IPs when possible
+
+### Error Handling
+
+```javascript
+// Comprehensive error handling example
+async function safeTweetOperation(rettiwt, operation) {
+  const maxRetries = 3;
+  let lastError;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      
+      // Handle specific error types
+      if (error.message.includes('User not found')) {
+        throw error; // Don't retry for permanent errors
+      }
+      
+      if (error.message.includes('rate limit')) {
+        // Wait with exponential backoff
+        await new Promise(resolve => 
+          setTimeout(resolve, Math.pow(2, i) * 1000)
+        );
+        continue;
+      }
+      
+      // Log the error
+      console.error(`Attempt ${i + 1} failed:`, error.message);
+    }
+  }
+  
+  throw lastError;
+}
+```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### 1. Authentication Errors
+- **Problem**: "Invalid API_KEY" or "Authentication failed"
+- **Solutions**:
+  - Ensure cookies are fresh and not expired
+  - Check that both `auth_token` and `ct0` are present
+  - Try generating a new API key using the browser extension
+  - Use the Android login method for more reliable authentication
+
+#### 2. Rate Limiting
+- **Problem**: Requests failing with rate limit errors
+- **Solutions**:
+  - Implement account rotation
+  - Add delays between requests
+  - Use the `delay` parameter in Rettiwt configuration
+  - Monitor and respect Twitter's rate limits
+
+#### 3. Cookie Format Issues
+- **Problem**: "Invalid cookie format" errors
+- **Solutions**:
+  - Ensure cookies are in the correct format
+  - Use the validation function: `validate_twitter_cookies()`
+  - Try different cookie export methods
+  - Check for special characters that need escaping
+
+#### 4. Database Issues (Twitter Engagement Tool)
+- **Problem**: "Database not found" or permission errors
+- **Solutions**:
+  ```bash
+  # Ensure database is initialized
+  python -m twitter_engagement init-db
+  
+  # Check file permissions
+  ls -la twitter_accounts.db
+  
+  # Use absolute paths if needed
+  export DB_PATH=/absolute/path/to/twitter_accounts.db
+  ```
+
+#### 5. Proxy Connection Issues
+- **Problem**: Proxy not working or connection timeouts
+- **Solutions**:
+  ```javascript
+  // Test proxy configuration
+  const rettiwt = new Rettiwt({
+    apiKey: API_KEY,
+    proxyUrl: 'http://proxy.example.com:8080',
+    timeout: 30000 // Increase timeout for slow proxies
+  });
+  ```
+
+### Debug Mode
+
+Enable detailed logging for troubleshooting:
+
+```javascript
+// JavaScript/TypeScript
+const rettiwt = new Rettiwt({
+  apiKey: API_KEY,
+  logging: true // Enable debug logs
+});
+```
+
+```python
+# Python (Twitter Engagement Tool)
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
 ## API Reference
 
 The complete API reference can be found at [this](https://rishikant181.github.io/Rettiwt-API/modules) page.
 
-## Additional information
+## Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Core API Development
+npm install
+npm run build
+npm run lint
+npm run test
+
+# Twitter Engagement Tool Development
+cd twitter-engagement-tool
+pip install -r requirements.txt
+pip install -e .
+python -m pytest tests/
+```
+
+## Security Considerations
+
+- **Never share your API keys or cookies publicly**
+- **Use environment variables for sensitive data**
+- **Implement proper access controls in production**
+- **Regularly rotate credentials**
+- **Monitor account activity for suspicious behavior**
+
+## Additional Information
 
 - This API uses the cookies of a Twitter account to fetch data from Twitter and as such, there is always a chance (although a measly one) of getting the account banned by Twitter algorithm.
+- The Twitter Engagement Tool stores credentials in a local SQLite database - ensure this file is properly secured
+- Rate limits vary based on the endpoint and authentication method used
+- Guest authentication has more restrictive limits than user authentication
+
+## License
+
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- 📚 [Documentation](https://rishikant181.github.io/Rettiwt-API/)
+- 🐛 [Issue Tracker](https://github.com/Rishikant181/Rettiwt-API/issues)
+- 💬 [Discussions](https://github.com/Rishikant181/Rettiwt-API/discussions)
+- 📧 Email: rishikantsahu181@gmail.com
 
 ## Donation
 
