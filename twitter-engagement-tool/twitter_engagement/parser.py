@@ -85,11 +85,14 @@ class AccountParser:
             value = value.strip()
             
             # Special handling for cookies
-            if field == 'cookies' and value:
-                try:
-                    data['cookies'] = parse_cookies(value)
-                except Exception as e:
-                    print(f"Warning: Failed to parse cookies: {e}")
+            if field == 'cookies':
+                if value:
+                    try:
+                        data['cookies'] = parse_cookies(value)
+                    except Exception as e:
+                        print(f"Warning: Failed to parse cookies: {e}")
+                        data['cookies'] = {}
+                else:
                     data['cookies'] = {}
             else:
                 data[field] = value

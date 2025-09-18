@@ -43,7 +43,14 @@ class TwitterAccount:
     def from_dict(cls, data: dict) -> 'TwitterAccount':
         """Create from dictionary (database row)"""
         data = data.copy()
-        data['cookies'] = json.loads(data.get('cookies', '{}'))
+        cookie_data = data.get('cookies', '{}')
+        if cookie_data == '""' or cookie_data == '':
+            data['cookies'] = {}
+        else:
+            try:
+                data['cookies'] = json.loads(cookie_data)
+            except (json.JSONDecodeError, TypeError):
+                data['cookies'] = {}
         data['created_at'] = datetime.fromisoformat(data['created_at'])
         if data.get('last_used'):
             data['last_used'] = datetime.fromisoformat(data['last_used'])

@@ -1,0 +1,3 @@
+# Bad format file - missing required fields
+user5:pass5
+user6:pass6:email6@example.com
