@@ -14,6 +14,7 @@ from .parser import AccountParser
 from .converter import RettwiConverter
 from .utils import format_datetime, truncate_string, validate_twitter_cookies
 from .login import auto_login_and_convert
+from .android_login import android_login_and_convert
 
 
 console = Console()
@@ -364,6 +365,86 @@ def auto_login(ctx, username: Optional[str], limit: int):
             console.print(f"\n[green]✓[/green] Run 'twitter-engagement export-rettiwt' to export credentials")
     
     asyncio.run(_auto_login())
+
+
+@cli.command()
+@click.option('--username', help='Login specific username only')
+@click.option('--all', is_flag=True, help='Process all accounts without cookies')
+@click.pass_context
+def android_login(ctx, username: Optional[str], all: bool):
+    """Login using Android API (more reliable)"""
+    async def _android_login():
+        db = ctx.obj['db']
+        
+        if username:
+            # Login specific account
+            account = await db.get_account(username)
+            if not account:
+                console.print(f"[red]Account '{username}' not found[/red]")
+                return
+            accounts = [account]
+        elif all:
+            # Get all accounts without valid cookies
+            all_accounts = await db.get_all_accounts()
+            accounts = [acc for acc in all_accounts if not acc.cookies or not validate_twitter_cookies(acc.cookies)]
+        else:
+            console.print("[yellow]Please specify --username or --all[/yellow]")
+            return
+        
+        if not accounts:
+            console.print("[yellow]No accounts need login[/yellow]")
+            return
+        
+        console.print(f"[cyan]🤖 Using Android API to login {len(accounts)} accounts...[/cyan]")
+        
+        success_count = 0
+        failed_count = 0
+        results = []
+        
+        for account in accounts:
+            console.print(f"\n[blue]Processing {account.username}...[/blue]")
+            
+            try:
+                # Attempt Android API login
+                result = await android_login_and_convert(account)
+                
+                if result:
+                    # Update account
+                    account.cookies = result['cookies']
+                    account.rettiwt_api_key = result['apiKey']
+                    await db.add_account(account)
+                    
+                    success_count += 1
+                    results.append(result)
+                    
+                    console.print(f"[green]✓[/green] {account.username}: Login successful")
+                    console.print(f"   API Key: {result['apiKey'][:50]}...")
+                    console.print(f"   Auth Method: {result.get('auth_method', 'unknown')}")
+                else:
+                    failed_count += 1
+                    console.print(f"[red]✗[/red] {account.username}: Login failed")
+                    await db.update_account_status(account.username, False, "Android login failed")
+            
+            except Exception as e:
+                failed_count += 1
+                console.print(f"[red]✗[/red] {account.username}: {str(e)}")
+                await db.update_account_status(account.username, False, str(e))
+        
+        # Summary
+        console.print(f"\n[bold]Summary:[/bold]")
+        console.print(f"  [green]Success:[/green] {success_count}")
+        console.print(f"  [red]Failed:[/red] {failed_count}")
+        
+        if success_count > 0:
+            # Save results to file
+            import json
+            with open('android_auth_results.json', 'w') as f:
+                json.dump(results, f, indent=2)
+            
+            console.print(f"\n[green]✓[/green] Authentication results saved to android_auth_results.json")
+            console.print(f"[green]✓[/green] Run 'twitter-engagement export-rettiwt' to export credentials")
+    
+    asyncio.run(_android_login())
 
 
 if __name__ == '__main__':

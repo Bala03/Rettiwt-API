@@ -37,6 +37,25 @@ Then run:
 python -m twitter_engagement add-accounts accounts.txt
 ```
 
+### Automatic Login Methods
+
+#### Method 1: Android API Login (Recommended)
+Uses Twitter's Android API for more reliable authentication:
+```bash
+# Login specific account
+python -m twitter_engagement android-login --username user1
+
+# Login all accounts without cookies
+python -m twitter_engagement android-login --all
+```
+
+#### Method 2: Web API Login
+Uses Twitter's web API (may require email verification):
+```bash
+# Auto-login accounts without cookies
+python -m twitter_engagement auto-login --limit 5
+```
+
 ### Converting to Rettiwt Format
 
 To convert accounts to Rettiwt API format:
