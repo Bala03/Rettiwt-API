@@ -1,0 +1,14 @@
+# Test accounts file with pipe delimiter
+# Format: username|password|email|email_password|cookies
+
+# Account with cookies (JSON format)
+user1|pass123|user1@example.com|emailpass1|{"auth_token": "abc123", "ct0": "xyz789", "kdt": "sample_kdt", "twid": "u%3D123456"}
+
+# Account with cookies (string format)
+user2|pass456|user2@example.com|emailpass2|auth_token=def456; ct0=uvw012; kdt=another_kdt; twid=u%3D789012
+
+# Account with base64 encoded cookies
+user3|pass789|user3@example.com|emailpass3|eyJhdXRoX3Rva2VuIjogImdoaTc4OSIsICJjdDAiOiAicnN0MzQ1In0=
+
+# Account without cookies
+user4|pass012|user4@example.com|emailpass4|
